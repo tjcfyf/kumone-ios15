@@ -338,7 +338,7 @@ public struct IOSMainWindow: View {
     @ViewBuilder
     private func tabStack<Content: View>(
         _ tab: IOSTab,
-        @ViewBuilder _ content: () -> Content
+        @ViewBuilder _ content: @escaping () -> Content
     ) -> some View {
         if #available(iOS 16.0, *) {
             NavigationStack(path: binding(for: tab)) {
