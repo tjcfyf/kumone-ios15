@@ -1,0 +1,52 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain info
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          xcodebuild -version
+          swift --version
+          echo "SDKs:"
+          xcodebuild -showsdks | grep -i ios || true
+
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -workspace ios/KumoneIOS.xcworkspace \
+            -scheme KumoneIOS \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            2>&1 | tee build.log | grep -E "error:|warning: .*deployment target|BUILD (SUCCEEDED|FAILED)" | head -400 || true
+
+      - name: Error summary
+        if: always()
+        run: |
+          echo "=== error count ==="
+          grep -c "error:" build.log || echo 0
+          echo "=== unique errors ==="
+          grep "error:" build.log | sed 's|/Users/runner/work/[^/]*/[^/]*/||' | sort -u | head -200 || true
+          echo "=== tail ==="
+          tail -40 build.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: build-log
+          path: build.log
