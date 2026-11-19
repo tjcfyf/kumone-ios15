@@ -7,7 +7,7 @@ struct IOSPlaybackQueueView: View {
     @EnvironmentObject private var toasts: ToastCenter
 
     var body: some View {
-        NavigationStack {
+        CompatSheetStack {
             ScrollView(showsIndicators: false) {
                 LazyVStack(alignment: .leading, spacing: 2) {
                     PlaybackHandoffList()
@@ -43,7 +43,7 @@ struct IOSPlaybackQueueView: View {
             .navigationTitle("播放队列")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .navigationBarTrailing) {
                     Text("\(player.upcomingTracks.count + (player.hasCurrentTrack ? 1 : 0)) 首")
                         .font(.caption)
                         .foregroundStyle(.secondary)

@@ -15,12 +15,13 @@ struct StorageSpaceView: View {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
                     if let capacity = model.snapshot?.device {
-                        ViewThatFits(in: .horizontal) {
+                        CompatViewThatFits {
                             HStack(alignment: .firstTextBaseline) {
                                 Text(deviceName).font(.headline)
                                 Spacer()
                                 capacityText(capacity)
                             }
+                        } fallback: {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(deviceName).font(.headline)
                                 capacityText(capacity)
@@ -37,7 +38,7 @@ struct StorageSpaceView: View {
             }
 
             Section {
-                LabeledContent(model.snapshot?.partial == true ? String(localized: "已统计的 Kumone 占用") : String(localized: "Kumone 占用")) {
+                CompatLabeledContent(model.snapshot?.partial == true ? String(localized: "已统计的 Kumone 占用") : String(localized: "Kumone 占用")) {
                     Text(model.snapshot.map { format($0.appBytes) } ?? "—")
                         .font(.body.weight(.semibold)).monospacedDigit()
                 }
@@ -194,8 +195,10 @@ struct StorageSpaceView: View {
             .font(.subheadline).foregroundStyle(.secondary).monospacedDigit()
     }
     private func usageRow(_ title: LocalizedStringKey, icon: String, category: StorageCategory) -> some View {
-        LabeledContent {
+        HStack {
+            Label(title, systemImage: icon)
+            Spacer(minLength: 8)
             Text(size(category)).monospacedDigit().foregroundStyle(.secondary)
-        } label: { Label(title, systemImage: icon) }
+        }
     }
 }

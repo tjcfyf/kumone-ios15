@@ -45,13 +45,20 @@ extension View {
 private struct WindowHorizontalInsetsPublisher: ViewModifier {
     @State private var insets = WindowHorizontalInsets()
 
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content
-            .environment(\.windowHorizontalInsets, insets)
-            .onGeometryChange(for: WindowHorizontalInsets.self) { proxy in
-                WindowHorizontalInsets(leading: proxy.safeAreaInsets.leading,
-                                       trailing: proxy.safeAreaInsets.trailing)
-            } action: { insets = $0 }
+        if #available(iOS 18.0, macOS 15.0, *) {
+            content
+                .environment(\.windowHorizontalInsets, insets)
+                .onGeometryChange(for: WindowHorizontalInsets.self) { proxy in
+                    WindowHorizontalInsets(leading: proxy.safeAreaInsets.leading,
+                                           trailing: proxy.safeAreaInsets.trailing)
+                } action: { insets = $0 }
+        } else {
+            // Older systems do not publish insets; shelves simply span the
+            // whole window, as they did before this existed.
+            content.environment(\.windowHorizontalInsets, insets)
+        }
     }
 }
 

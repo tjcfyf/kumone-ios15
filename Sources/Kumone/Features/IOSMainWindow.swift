@@ -178,7 +178,13 @@ public struct IOSMainWindow: View {
     @ViewBuilder
     private var appContent: some View {
         if UIDevice.current.userInterfaceIdiom == .pad {
-            MainWindow(path: $iPadPath)
+            if #available(iOS 16.0, *) {
+                MainWindow(path: $iPadPath)
+            } else {
+                // iOS 15 has no `NavigationSplitView`; iPad falls back to the
+                // same tab interface as iPhone.
+                tabInterface
+            }
         } else {
             tabInterface
                 .overlay {
@@ -334,10 +340,20 @@ public struct IOSMainWindow: View {
         _ tab: IOSTab,
         @ViewBuilder _ content: () -> Content
     ) -> some View {
-        NavigationStack(path: binding(for: tab)) {
-            content().appDestinations()
+        if #available(iOS 16.0, *) {
+            NavigationStack(path: binding(for: tab)) {
+                content().appDestinations()
+            }
+            .publishesWindowHorizontalInsets()
+        } else {
+            CompatNavigationStack(
+                path: binding(for: tab),
+                destination: { AnyView(DestinationView(destination: $0)) }
+            ) {
+                content()
+            }
+            .publishesWindowHorizontalInsets()
         }
-        .publishesWindowHorizontalInsets()
     }
 
     @ViewBuilder
@@ -680,7 +696,7 @@ struct IOSLibraryView: View {
             }
 
             Section {
-                NavigationLink(value: Destination.downloaded) {
+                DestinationLink(Destination.downloaded) {
                     Label("已下载", systemImage: "arrow.down.circle.fill")
                 }
             }
@@ -688,21 +704,21 @@ struct IOSLibraryView: View {
             if account.hasAuthCookie {
                 Section("我的音乐") {
                     if let liked = account.likedSongsPlaylist {
-                        NavigationLink(value: Destination.playlist(liked.id)) {
+                        DestinationLink(Destination.playlist(liked.id)) {
                             Label("我喜欢的音乐", systemImage: "heart.fill")
                                 .foregroundStyle(Theme.accent)
                         }
                     }
-                    NavigationLink(value: Destination.daily) {
+                    DestinationLink(Destination.daily) {
                         Label("每日推荐", systemImage: "calendar")
                     }
-                    NavigationLink(value: Destination.recents) {
+                    DestinationLink(Destination.recents) {
                         Label("最近播放", systemImage: "clock.fill")
                     }
-                    NavigationLink(value: Destination.collections) {
+                    DestinationLink(Destination.collections) {
                         Label("我的收藏", systemImage: "star.fill")
                     }
-                    NavigationLink(value: Destination.cloud) {
+                    DestinationLink(Destination.cloud) {
                         Label("音乐云盘", systemImage: "icloud.fill")
                     }
                 }
@@ -710,7 +726,7 @@ struct IOSLibraryView: View {
                 if !account.createdPlaylists.isEmpty {
                     Section {
                         ForEach(account.createdPlaylists) { playlist in
-                            NavigationLink(value: Destination.playlist(playlist.id)) {
+                            DestinationLink(Destination.playlist(playlist.id)) {
                                 HStack(spacing: 10) {
                                     CachedAsyncImage(url: playlist.coverURL?.resizedImageURL(80), animated: false)
                                         .frame(width: 32, height: 32)
@@ -743,7 +759,7 @@ struct IOSLibraryView: View {
                 if !account.subscribedPlaylists.isEmpty {
                     Section("收藏的歌单") {
                         ForEach(account.subscribedPlaylists) { playlist in
-                            NavigationLink(value: Destination.playlist(playlist.id)) {
+                            DestinationLink(Destination.playlist(playlist.id)) {
                                 HStack(spacing: 10) {
                                     CachedAsyncImage(url: playlist.coverURL?.resizedImageURL(80), animated: false)
                                         .frame(width: 32, height: 32)
@@ -770,7 +786,7 @@ struct IOSLibraryView: View {
         }
         .navigationTitle("我的")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     presentSettingsSheet()
                 } label: {

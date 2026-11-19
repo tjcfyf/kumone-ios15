@@ -64,11 +64,11 @@ private struct SoundEffectsPresentationModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content.sheet(isPresented: $isPresented) {
-            NavigationStack {
+            CompatSheetStack {
                 SoundEffectsPage(initialSection: .equalizer)
                     .environmentObject(settings)
                     .toolbar {
-                        ToolbarItem(placement: .topBarTrailing) {
+                        ToolbarItem(placement: .navigationBarTrailing) {
                             Button("完成") { isPresented = false }
                                 .tint(Color.primary)
                         }
@@ -296,7 +296,7 @@ private struct SoundEffectsEqualizerEditor: View {
                 .frame(width: 28, height: sliderHeight)
                 .padding(.top, 30)
 
-                ScrollView(.horizontal) {
+                ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 8) {
                         ForEach(0..<EqualizerConfiguration.bandCount, id: \.self) { index in
                             EqualizerBandControl(
@@ -310,7 +310,7 @@ private struct SoundEffectsEqualizerEditor: View {
                     .padding(.horizontal, 2)
                     .padding(.vertical, 4)
                 }
-                .scrollIndicators(.hidden)
+                .compatScrollDismissesKeyboard()
                 .equalizerHorizontalBounce()
             }
             // Keep the controls draggable while bypassed: the first value

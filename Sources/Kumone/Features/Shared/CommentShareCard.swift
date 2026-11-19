@@ -1,6 +1,7 @@
 import SwiftUI
 #if os(iOS)
 import Photos
+import UIKit
 #endif
 
 /// The picture a shared comment becomes: the comment as a quote over the
@@ -330,6 +331,32 @@ struct CommentShareSheet: View {
     }
     #endif
 
+    #if os(iOS)
+    /// iOS 15 fallback for `ImageRenderer`: lay the card out in an off-screen
+    /// `UIHostingController` and rasterise its layer.
+    private static func renderOffscreen<V: View>(
+        _ view: V, width: CGFloat, scale: CGFloat
+    ) -> UIImage? {
+        let hosting = UIHostingController(rootView: view)
+        hosting.view.backgroundColor = .clear
+        var size = hosting.view.sizeThatFits(
+            CGSize(width: width, height: .greatestFiniteMagnitude)
+        )
+        size.width = width
+        if size.height <= 1 { size.height = 600 }
+        hosting.view.bounds = CGRect(origin: .zero, size: size)
+        hosting.view.setNeedsLayout()
+        hosting.view.layoutIfNeeded()
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = false
+        return UIGraphicsImageRenderer(size: size, format: format).image { context in
+            hosting.view.layer.render(in: context.cgContext)
+        }
+    }
+    #endif
+
     /// The artwork and avatar are fetched first: the renderer draws what it
     /// is given and does not wait for images to load.
     private func render() async {
@@ -350,18 +377,25 @@ struct CommentShareSheet: View {
             avatar: avatar,
             colors: colors
         )
-        let renderer = ImageRenderer(content: card)
-        renderer.scale = 3
-        renderer.proposedSize = ProposedViewSize(width: CommentShareCard.width, height: nil)
-        #if os(iOS)
-        image = renderer.uiImage
-        #else
-        image = renderer.nsImage
-        #endif
+        if #available(iOS 16.0, macOS 13.0, *) {
+            let renderer = ImageRenderer(content: card)
+            renderer.scale = 3
+            renderer.proposedSize = ProposedViewSize(width: CommentShareCard.width, height: nil)
+            #if os(iOS)
+            image = renderer.uiImage
+            #else
+            image = renderer.nsImage
+            #endif
+        } else {
+            #if os(iOS)
+            image = Self.renderOffscreen(card, width: CommentShareCard.width, scale: 3)
+            #endif
+        }
     }
 }
 
 /// Rounds its content's height up to a whole number of points, top-aligned.
+@available(iOS 16.0, *)
 private struct WholePointHeight: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         guard let content = subviews.first else { return .zero }
@@ -375,8 +409,13 @@ private struct WholePointHeight: Layout {
 }
 
 private extension View {
+    @ViewBuilder
     func wholePointHeight() -> some View {
-        WholePointHeight { self }
+        if #available(iOS 16.0, macOS 13.0, *) {
+            WholePointHeight { self }
+        } else {
+            self
+        }
     }
 }
 

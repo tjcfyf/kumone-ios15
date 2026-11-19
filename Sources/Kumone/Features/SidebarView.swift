@@ -74,7 +74,7 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
-        .scrollContentBackground(.hidden)
+        .compatScrollContentBackgroundHidden()
 #if os(macOS)
         // Unlike .hidden, .never also applies when a mouse is connected.
         .scrollIndicators(.never)

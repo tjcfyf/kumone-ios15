@@ -193,6 +193,7 @@ struct RubyText: View, Animatable {
         set { size = newValue }
     }
 
+    @ViewBuilder
     var body: some View {
         let style = RubyAttributedString.Style(
             size: size,
@@ -205,22 +206,39 @@ struct RubyText: View, Animatable {
         )
         let attributed = RubyAttributedString.make(segments, style: style, alphas: alphas)
 
-        return RubyTextLayout(attributed: attributed) {
-            Canvas(rendersAsynchronously: false) { context, canvasSize in
-                context.withCGContext { cgContext in
-                    cgContext.saveGState()
-                    cgContext.textMatrix = .identity
-                    // Core Text draws bottom-up; SwiftUI hands over a top-down context.
-                    cgContext.translateBy(x: 0, y: canvasSize.height)
-                    cgContext.scaleBy(x: 1, y: -1)
-                    RubyAttributedString.draw(
-                        attributed,
-                        in: CGRect(origin: .zero, size: canvasSize),
-                        context: cgContext
-                    )
-                    cgContext.restoreGState()
+        if #available(iOS 16.0, macOS 13.0, *) {
+            RubyTextLayout(attributed: attributed) {
+                Canvas(rendersAsynchronously: false) { context, canvasSize in
+                    context.withCGContext { cgContext in
+                        cgContext.saveGState()
+                        cgContext.textMatrix = .identity
+                        // Core Text draws bottom-up; SwiftUI hands over a top-down context.
+                        cgContext.translateBy(x: 0, y: canvasSize.height)
+                        cgContext.scaleBy(x: 1, y: -1)
+                        RubyAttributedString.draw(
+                            attributed,
+                            in: CGRect(origin: .zero, size: canvasSize),
+                            context: cgContext
+                        )
+                        cgContext.restoreGState()
+                    }
                 }
             }
+        } else {
+            // iOS 15 has no `Layout`; draw the line as plain text, without the
+            // furigana annotations.
+            Text(segments.map(\.text).joined())
+                .font(.system(size: size, weight: weight))
+                .foregroundStyle(color)
+                .multilineTextAlignment(textAlignment)
+        }
+    }
+
+    private var textAlignment: TextAlignment {
+        switch alignment {
+        case .center: return .center
+        case .right: return .trailing
+        default: return .leading
         }
     }
 }
@@ -232,6 +250,7 @@ private final class AttributedBox: @unchecked Sendable {
     init(_ string: NSAttributedString) { self.string = string }
 }
 
+@available(iOS 16.0, *)
 private struct RubyTextLayout: Layout {
     private let box: AttributedBox
 

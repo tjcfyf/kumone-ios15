@@ -162,7 +162,7 @@ struct CloudView: View {
             list
                 .navigationTitle(isSearchActive ? String(localized: "搜索云盘歌曲") : String(localized: "音乐云盘"))
                 #if os(iOS)
-                .scrollDismissesKeyboard(.interactively)
+                .compatScrollDismissesKeyboard()
                 .toolbar {
                     if !isSearchActive && !model.items.isEmpty {
                         ToolbarItem(placement: .navigationBarTrailing) {

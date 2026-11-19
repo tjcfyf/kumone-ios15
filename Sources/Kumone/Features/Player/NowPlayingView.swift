@@ -1236,7 +1236,7 @@ struct NowPlayingView: View {
                 Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: glyphSize, weight: .bold))
                     .foregroundStyle(.black.opacity(0.85))
-                    .contentTransition(.opacity)
+                    .compatContentTransitionOpacity()
             }
         }
         .buttonStyle(.pressable)
@@ -1904,7 +1904,7 @@ private struct CompactTransportControls: View {
             Button(action: player.togglePlayPause) {
                 Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 36, weight: .bold))
-                    .contentTransition(.opacity)
+                    .compatContentTransitionOpacity()
                     .frame(maxWidth: .infinity, minHeight: 64)
             }
             .accessibilityLabel(player.isPlaying ? "暂停" : "播放")
@@ -2760,7 +2760,7 @@ private struct MinimalTransportControls: View {
             Button(action: player.togglePlayPause) {
                 Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 38, weight: .bold))
-                    .contentTransition(.opacity)
+                    .compatContentTransitionOpacity()
                     .frame(maxWidth: .infinity, minHeight: 64)
             }
             .accessibilityLabel(player.isPlaying ? "暂停" : "播放")

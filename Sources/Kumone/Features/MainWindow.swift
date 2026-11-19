@@ -1,5 +1,10 @@
 import SwiftUI
 
+#if os(iOS)
+/// iOS 15 has no `NavigationSplitView`, so the split layout exists only
+/// from iOS 16; iPad uses the tab interface below that.
+@available(iOS 16.0, *)
+#endif
 struct MainWindow: View {
     private let externalPath: Binding<[Destination]>?
 #if os(macOS)

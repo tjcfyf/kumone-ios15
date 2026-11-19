@@ -146,17 +146,17 @@ private struct DesktopLyricsBox: View {
                             .font(.system(size: 15, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.78))
                             .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-                            .contentTransition(.opacity)
+                            .compatContentTransitionOpacity()
                     }
                     mainText(for: line)
                         .shadow(color: .black.opacity(0.5), radius: 3, y: 1)
-                        .contentTransition(.opacity)
+                        .compatContentTransitionOpacity()
                     if settings.showLyricsTranslation, let translation = line.translation {
                         Text(translation)
                             .font(.system(size: 16, weight: .semibold, design: .rounded))
                             .foregroundStyle(.white.opacity(0.78))
                             .shadow(color: .black.opacity(0.5), radius: 2, y: 1)
-                            .contentTransition(.opacity)
+                            .compatContentTransitionOpacity()
                     }
                 }
                 .multilineTextAlignment(.center)

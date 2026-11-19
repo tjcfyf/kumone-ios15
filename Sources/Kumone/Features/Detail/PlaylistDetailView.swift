@@ -183,7 +183,7 @@ struct PlaylistDetailView: View {
         }
         .navigationTitle(isSearchActive ? String(localized: "搜索歌单内歌曲") : "")
         .navigationBarTitleDisplayMode(.inline)
-        .scrollDismissesKeyboard(.interactively)
+        .compatScrollDismissesKeyboard()
         #endif
     }
 
@@ -364,7 +364,7 @@ struct PlaylistDetailView: View {
                 }
                 .buttonStyle(.plain)
                 .sheet(isPresented: $showFullDescription) {
-                    NavigationStack {
+                    CompatSheetStack {
                         ScrollView {
                             Text(description)
                                 .font(.system(size: 14))

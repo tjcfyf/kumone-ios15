@@ -19,26 +19,75 @@ struct SettingsSheet: View {
     @State private var path: [SettingsView.SettingsPage] = []
 
     var body: some View {
-        NavigationStack(path: $path) {
-            SettingsView()
-                .navigationTitle("设置")
-                .navigationBarTitleDisplayMode(titleDisplayMode)
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("完成") { dismiss() }
+        if #available(iOS 16.0, *) {
+            NavigationStack(path: $path) {
+                settingsRoot
+                    .navigationDestination(for: SettingsView.SettingsPage.self) { page in
+                        SettingsPageView(page: page)
                     }
+            }
+        } else {
+            // iOS 15: rows push a concrete view directly (`SettingsRouteLink`),
+            // so neither a path nor a destination registration is needed.
+            NavigationView {
+                settingsRoot
+            }
+            .navigationViewStyle(.stack)
+        }
+    }
+
+    private var settingsRoot: some View {
+        SettingsView()
+            .navigationTitle("设置")
+            .navigationBarTitleDisplayMode(titleDisplayMode)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("完成") { dismiss() }
                 }
-                .navigationDestination(for: SettingsView.SettingsPage.self) { page in
-                    switch page {
-                    case .storage:
-                        StorageSpaceView {
-                            dismiss()
-                            openDestination(.downloaded)
-                        }
-                    case .soundEffects:
-                        SoundEffectsPage()
-                    }
-                }
+            }
+    }
+}
+
+/// iOS 15 destination for `SettingsSheet`'s rows.
+private struct SettingsPageView: View {
+    let page: SettingsView.SettingsPage
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.openDestination) private var openDestination
+
+    @ViewBuilder
+    var body: some View {
+        switch page {
+        case .storage:
+            StorageSpaceView {
+                dismiss()
+                openDestination(.downloaded)
+            }
+        case .soundEffects:
+            SoundEffectsPage()
+        }
+    }
+}
+
+/// `NavigationLink(value:)` on iOS 16+, a plain destination link on iOS 15.
+private struct SettingsRouteLink<Label: View>: View {
+    let page: SettingsView.SettingsPage
+    private let label: () -> Label
+
+    init(_ page: SettingsView.SettingsPage, @ViewBuilder label: @escaping () -> Label) {
+        self.page = page
+        self.label = label
+    }
+
+    @ViewBuilder
+    var body: some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            NavigationLink(value: page) { label() }
+        } else {
+            #if os(iOS)
+            NavigationLink(destination: SettingsPageView(page: page)) { label() }
+            #else
+            label()
+            #endif
         }
     }
 }
@@ -99,7 +148,7 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 #if os(iOS)
-                NavigationLink(value: SettingsPage.soundEffects) {
+                SettingsRouteLink(.soundEffects) {
                     HStack {
                         Text("音效")
                         Spacer()
@@ -219,7 +268,7 @@ struct SettingsView: View {
             }
 
             Section("存储") {
-                NavigationLink(value: SettingsPage.storage) {
+                SettingsRouteLink(.storage) {
                     Label("存储空间", systemImage: "internaldrive")
                 }
             }
@@ -237,7 +286,9 @@ struct SettingsView: View {
 
             Section("账号") {
                 if let profile = account.profile {
-                    LabeledContent("当前账号", value: profile.nickname)
+                    CompatLabeledContent("当前账号") {
+                        Text(profile.nickname)
+                    }
                     Button("退出登录", role: .destructive) {
                         Task {
                             do { try await AccountStore.shared.logout() }

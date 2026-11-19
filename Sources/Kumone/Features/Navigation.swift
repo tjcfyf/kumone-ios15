@@ -113,44 +113,60 @@ extension Array where Element == Destination {
     }
 }
 
+/// One navigated page, shared by the iOS 16 `navigationDestination`
+/// registration and the iOS 15 backport.
+struct DestinationView: View {
+    let destination: Destination
+
+    var body: some View {
+        Group {
+            switch destination {
+            case .downloaded:
+                DownloadedMusicView()
+            case .downloadTasks:
+                DownloadTasksView()
+            case .playlist(let id):
+                PlaylistDetailView(playlistID: id)
+            case .radarPlaylist(let id):
+                PlaylistDetailView(playlistID: id, recommendationContext: .radar)
+            case .album(let id):
+                AlbumDetailView(albumID: id)
+            case .artist(let id):
+                ArtistDetailView(artistID: id)
+            case .daily:
+                DailySongsView()
+            case .toplists:
+                ToplistsView()
+            case .recents:
+                RecentsView()
+            case .collections:
+                CollectionsView()
+            case .cloud:
+                CloudView()
+            case .search(let query):
+                SearchView(query: query)
+            }
+        }
+        .playerContentInset()
+        #if os(macOS)
+        // The main window draws navigation beside the detail title
+        // (`PageNavigationBand`), keeping the sidebar toggle fixed.
+        .navigationBarBackButtonHidden(true)
+        #endif
+    }
+}
+
 /// Registers all shared navigation destinations on a stack.
 struct DestinationsModifier: ViewModifier {
+    @ViewBuilder
     func body(content: Content) -> some View {
-        content.navigationDestination(for: Destination.self) { destination in
-            Group {
-                switch destination {
-                case .downloaded:
-                    DownloadedMusicView()
-                case .downloadTasks:
-                    DownloadTasksView()
-                case .playlist(let id):
-                    PlaylistDetailView(playlistID: id)
-                case .radarPlaylist(let id):
-                    PlaylistDetailView(playlistID: id, recommendationContext: .radar)
-                case .album(let id):
-                    AlbumDetailView(albumID: id)
-                case .artist(let id):
-                    ArtistDetailView(artistID: id)
-                case .daily:
-                    DailySongsView()
-                case .toplists:
-                    ToplistsView()
-                case .recents:
-                    RecentsView()
-                case .collections:
-                    CollectionsView()
-                case .cloud:
-                    CloudView()
-                case .search(let query):
-                    SearchView(query: query)
-                }
+        if #available(iOS 16.0, macOS 13.0, *) {
+            content.navigationDestination(for: Destination.self) { destination in
+                DestinationView(destination: destination)
             }
-            .playerContentInset()
-            #if os(macOS)
-            // The main window draws navigation beside the detail title
-            // (`PageNavigationBand`), keeping the sidebar toggle fixed.
-            .navigationBarBackButtonHidden(true)
-            #endif
+        } else {
+            // iOS 15: `CompatNavigationStack` renders each page itself.
+            content
         }
     }
 }
