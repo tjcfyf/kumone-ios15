@@ -341,7 +341,7 @@ struct SettingsView: View {
                 .listRowSeparator(.hidden)
             }
         }
-        .formStyle(.grouped)
+        .compatFormStyleGrouped()
         #if os(macOS)
         .navigationDestination(for: SettingsPage.self) { page in
             Group {

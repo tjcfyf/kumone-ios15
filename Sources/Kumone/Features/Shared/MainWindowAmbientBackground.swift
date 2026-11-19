@@ -107,7 +107,7 @@ final class MainWindowChromeController {
         if toolbarItemsChanged {
             toolbarUpdateTask?.cancel()
             toolbarUpdateTask = Task { @MainActor [weak self, weak window] in
-                try? await Task.sleep(for: .milliseconds(100))
+                try? await Task.sleep(nanoseconds: 100_000_000)
                 guard !Task.isCancelled, let self, let window else { return }
                 self.updateLayout(in: window)
             }

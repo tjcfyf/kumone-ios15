@@ -61,24 +61,34 @@ struct ParsedLyrics: Hashable {
 enum LyricsParser {
     /// Parses an LRC body into (time, text) pairs. Handles multiple timestamps
     /// per line and both `.` / `:` millisecond separators.
+    ///
+    /// `Regex` is iOS 16, so the scan runs on `NSRegularExpression`, which the
+    /// app has always been able to use.
     static func parseLRC(_ lrc: String) -> [(time: TimeInterval, text: String)] {
         var result: [(TimeInterval, String)] = []
-        let timeTag = #/\[(\d+):(\d+)(?:[.:](\d+))?\]/#
+        guard let timeTag = try? NSRegularExpression(
+            pattern: #"\[(\d+):(\d+)(?:[.:](\d+))?\]"#
+        ) else { return [] }
 
         for rawLine in lrc.components(separatedBy: .newlines) {
             let line = rawLine.trimmingCharacters(in: .whitespaces)
             guard !line.isEmpty else { continue }
-            let matches = line.matches(of: timeTag)
-            guard !matches.isEmpty else { continue }
+            let source = line as NSString
+            let matches = timeTag.matches(
+                in: line, range: NSRange(location: 0, length: source.length)
+            )
             guard let lastMatch = matches.last else { continue }
-            let content = String(line[lastMatch.range.upperBound...])
+            let content = source.substring(from: lastMatch.range.upperBound)
                 .trimmingCharacters(in: .whitespaces)
             for match in matches {
-                let min = Double(match.output.1) ?? 0
-                let sec = Double(match.output.2) ?? 0
+                let min = Double(source.substring(with: match.range(at: 1))) ?? 0
+                let sec = Double(source.substring(with: match.range(at: 2))) ?? 0
                 var frac = 0.0
-                if let msStr = match.output.3, let ms = Double(msStr) {
-                    frac = ms / pow(10, Double(msStr.count))
+                if match.range(at: 3).location != NSNotFound {
+                    let msStr = source.substring(with: match.range(at: 3))
+                    if let ms = Double(msStr) {
+                        frac = ms / pow(10, Double(msStr.count))
+                    }
                 }
                 result.append((min * 60 + sec + frac, content))
             }
@@ -92,25 +102,29 @@ enum LyricsParser {
     /// skipped. A blank token — the gap between two words — rides on the word
     /// before it, so the words' text joined is the line's text.
     static func parseYRC(_ yrc: String) -> [LyricLine] {
-        let lineTag = #/^\[(\d+),(\d+)\]/#
-        let wordTag = #/\((\d+),(\d+),\d+\)([^(]*)/#
+        guard let lineTag = try? NSRegularExpression(pattern: #"^\[(\d+),(\d+)\]"#),
+              let wordTag = try? NSRegularExpression(pattern: #"\((\d+),(\d+),\d+\)([^(]*)"#)
+        else { return [] }
+
         var lines: [LyricLine] = []
         for raw in yrc.components(separatedBy: .newlines) {
             let line = raw.trimmingCharacters(in: .whitespaces)
-            guard let head = line.firstMatch(of: lineTag) else { continue }
-            let lineStart = (Double(head.output.1) ?? 0) / 1000
-            let lineDuration = (Double(head.output.2) ?? 0) / 1000
+            let source = line as NSString
+            let range = NSRange(location: 0, length: source.length)
+            guard let head = lineTag.firstMatch(in: line, range: range) else { continue }
+            let lineStart = (Double(source.substring(with: head.range(at: 1))) ?? 0) / 1000
+            let lineDuration = (Double(source.substring(with: head.range(at: 2))) ?? 0) / 1000
             var words: [LyricWord] = []
-            for w in line.matches(of: wordTag) {
-                let piece = String(w.output.3)
+            for w in wordTag.matches(in: line, range: range) {
+                let piece = source.substring(with: w.range(at: 3))
                 if piece.allSatisfy(\.isWhitespace) {
                     if let last = words.indices.last {
                         words[last] = words[last].replacingText(words[last].text + piece)
                     }
                     continue
                 }
-                let start = (Double(w.output.1) ?? 0) / 1000
-                let duration = (Double(w.output.2) ?? 0) / 1000
+                let start = (Double(source.substring(with: w.range(at: 1))) ?? 0) / 1000
+                let duration = (Double(source.substring(with: w.range(at: 2))) ?? 0) / 1000
                 words.append(LyricWord(text: piece, start: start, duration: duration))
             }
             if let first = words.indices.first {

@@ -20,14 +20,18 @@ final class NowPlayingManager {
     /// API for it (macOS has no equivalent). This is the client-side
     /// hardening for #124/#40 — the launch itself is still controlled by the
     /// system and the installed app's signing identity.
-    private var session: MPNowPlayingSession?
+    /// Held as `AnyObject`: `MPNowPlayingSession` is iOS 16, and this
+    /// property has to exist on iOS 15 too. Cast back before use.
+    private var session: AnyObject?
     #endif
 
     /// Where metadata is published. With a session this must be the session's
     /// own center — the default center is not associated with it.
     private var infoCenter: MPNowPlayingInfoCenter {
         #if os(iOS)
-        if let session { return session.nowPlayingInfoCenter }
+        if #available(iOS 16.0, *), let session = session as? MPNowPlayingSession {
+            return session.nowPlayingInfoCenter
+        }
         #endif
         return .default()
     }
@@ -37,7 +41,9 @@ final class NowPlayingManager {
     /// outside the session.
     private var commandCenter: MPRemoteCommandCenter {
         #if os(iOS)
-        if let session { return session.remoteCommandCenter }
+        if #available(iOS 16.0, *), let session = session as? MPNowPlayingSession {
+            return session.remoteCommandCenter
+        }
         #endif
         return .shared()
     }
@@ -90,7 +96,7 @@ final class NowPlayingManager {
     func attach(to player: PlayerService, avPlayer: AVPlayer? = nil) {
         self.player = player
         #if os(iOS)
-        if let avPlayer {
+        if #available(iOS 16.0, *), let avPlayer {
             let session = MPNowPlayingSession(players: [avPlayer])
             // We publish the full dictionary ourselves (elapsed time, queue
             // count, artwork), which the automatic publisher would omit.

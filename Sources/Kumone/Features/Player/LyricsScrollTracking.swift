@@ -14,7 +14,7 @@ private struct LyricsScrollTracking: ViewModifier {
 
     @State private var resumeTask: Task<Void, Never>?
 
-    private static let holdDuration: Duration = .seconds(3)
+    private static let holdDuration: TimeInterval = 3
 
     func body(content: Content) -> some View {
         Group {
@@ -55,7 +55,7 @@ private struct LyricsScrollTracking: ViewModifier {
     private func scheduleResume() {
         resumeTask?.cancel()
         resumeTask = Task { @MainActor in
-            try? await Task.sleep(for: Self.holdDuration)
+            try? await Task.sleep(nanoseconds: AppTime.nanoseconds(Self.holdDuration))
             guard !Task.isCancelled else { return }
             isUserScrolling = false
             onResume()

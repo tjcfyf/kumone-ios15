@@ -72,7 +72,7 @@ enum Upstream {
     }
 
     private static let defaultsKey = "upstream.hosts"
-    private static let state = OSAllocatedUnfairLock<Hosts?>(initialState: load())
+    private static let state = CompatLockedState<Hosts?>(initialState: load())
 
     private static func load() -> Hosts? {
         guard let data = UserDefaults.standard.data(forKey: defaultsKey) else { return nil }

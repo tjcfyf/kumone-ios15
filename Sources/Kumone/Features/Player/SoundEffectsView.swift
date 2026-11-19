@@ -43,7 +43,7 @@ struct SoundEffectsButton: View {
                 }
                 .contentShape(Circle())
         }
-        .menuOrder(.fixed)
+        .compatMenuOrderFixed()
         .buttonStyle(.pressable)
         .accessibilityLabel("音效")
         .accessibilityValue(settings.soundEffectPreset.displayName)

@@ -58,11 +58,6 @@ struct KaraokeLyricLine: PlatformViewRepresentable {
                     playing: playing)
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: KaraokeLineView, context: Context) -> CGSize? {
-        KaraokeLineView.fittedSize(line: line, size: size, weight: weight,
-                                   alignment: alignment, rounded: rounded,
-                                   width: proposal.width)
-    }
     #endif
 }
 
@@ -222,6 +217,14 @@ final class KaraokeLineView: UIView {
     private var displayLink: CADisplayLink?
     private var lastDraw: CFTimeInterval = 0
 
+    /// Height reported to SwiftUI; iOS 15 has no representable
+    /// `sizeThatFits`, so the view measures itself.
+    private var intrinsicHeight: CGFloat = 0
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: UIView.noIntrinsicMetric, height: intrinsicHeight)
+    }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .clear
@@ -233,6 +236,12 @@ final class KaraokeLineView: UIView {
     func update(line: LyricLine, words: [LyricWord], size: CGFloat,
                 weight: Font.Weight, color: Color, alignment: NSTextAlignment,
                 rounded: Bool, playing: Bool) {
+        if let fitted = Self.fittedSize(line: line, size: size, weight: weight,
+                                        alignment: alignment, rounded: rounded,
+                                        width: nil), fitted.height != intrinsicHeight {
+            intrinsicHeight = fitted.height
+            invalidateIntrinsicContentSize()
+        }
         content.update(line: line, words: words, size: size, weight: weight,
                        color: PlatformColor(color), alignment: alignment,
                        rounded: rounded)

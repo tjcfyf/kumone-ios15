@@ -182,6 +182,7 @@ struct CommentShareSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var image: PlatformImage?
     @State private var saveState = SaveState.idle
+    @State private var showShareSheet = false
 
     private enum SaveState: Equatable {
         case idle, saving, saved
@@ -217,8 +218,7 @@ struct CommentShareSheet: View {
         #if os(macOS)
         .frame(minWidth: 440, idealWidth: 460, minHeight: 620, idealHeight: 720)
         #else
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        .compatSheetLarge()
         #endif
         .tint(Theme.accent)
         .accessibilityIdentifier("commentShareSheet")
@@ -253,16 +253,33 @@ struct CommentShareSheet: View {
             let shared = Image(platformImage: image)
             VStack(spacing: 8) {
                 HStack(spacing: 12) {
-                    ShareLink(
-                        item: shared,
-                        preview: SharePreview(Text("\(track.name) 的评论"), image: shared)
-                    ) {
-                        Label("分享", systemImage: "square.and.arrow.up")
-                            .lineLimit(1)
-                            .frame(maxWidth: .infinity)
+                    if #available(iOS 16.0, macOS 13.0, *) {
+                        ShareLink(
+                            item: shared,
+                            preview: SharePreview(Text("\(track.name) 的评论"), image: shared)
+                        ) {
+                            Label("分享", systemImage: "square.and.arrow.up")
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                    } else {
+                        #if os(iOS)
+                        Button {
+                            showShareSheet = true
+                        } label: {
+                            Label("分享", systemImage: "square.and.arrow.up")
+                                .lineLimit(1)
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .sheet(isPresented: $showShareSheet) {
+                            CompatActivityView(items: [image])
+                        }
+                        #endif
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
 
                     saveButton(image)
                         .buttonStyle(.bordered)

@@ -265,7 +265,7 @@ struct MainWindow: View {
                 // The window buttons stay: this page is the whole window, so
                 // they are its only way to close, dock or zoom it (#128).
                 nowPlayingChromeTask = Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(350))
+                    try? await Task.sleep(nanoseconds: 350_000_000)
                     guard !Task.isCancelled else { return }
                     nowPlayingChromeHidden = true
                 }
@@ -624,7 +624,7 @@ struct MainWindowConfigurator: NSViewRepresentable {
                         // SwiftUI re-commits toolbar visibility around the
                         // hand-off (see MainWindowChromeController),
                         // so run one more pass once that commit settles.
-                        try? await Task.sleep(for: .milliseconds(100))
+                        try? await Task.sleep(nanoseconds: 100_000_000)
                         self?.reassertChromeState()
                     }
                 }

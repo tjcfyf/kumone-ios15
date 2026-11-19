@@ -44,7 +44,7 @@ final class SleepTimer: ObservableObject {
         state = .countdown(deadline: Date.now.addingTimeInterval(seconds))
         deadlineTask = Task { [weak self] in
             do {
-                try await Task.sleep(for: .seconds(seconds))
+                try await Task.sleep(nanoseconds: AppTime.nanoseconds(seconds))
             } catch is CancellationError {
                 return
             } catch {

@@ -44,8 +44,10 @@ struct AlbumDetailView: View {
             if downloads.network.connected || savedCollectionID == nil { await load() }
         }
         .toolbar {
-            if errorMessage != nil, downloads.network.connected, album != nil || savedCollectionID != nil {
-                ToolbarItem(placement: .primaryAction) {
+            // The condition lives inside the item: `ToolbarContentBuilder`
+            // only learned `buildIf` in iOS 16.
+            ToolbarItem(placement: .primaryAction) {
+                if errorMessage != nil, downloads.network.connected, album != nil || savedCollectionID != nil {
                     Button { Task { await load() } } label: { Image(systemName: "arrow.clockwise") }
                         .accessibilityLabel("重试")
                         .help("重试")

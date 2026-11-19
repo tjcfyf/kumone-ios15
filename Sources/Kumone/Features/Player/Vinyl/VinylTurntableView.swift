@@ -226,9 +226,6 @@ private struct SpinningVinylDisc: PlatformViewRepresentable {
         host.spin.setSpinning(spinning)
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: VinylDiscHost, context: Context) -> CGSize? {
-        CGSize(width: discSize + 6, height: discSize + 6)
-    }
 }
 #endif
 
@@ -258,6 +255,12 @@ private final class VinylDiscHost: NSView {
 
     func update(artworkImage: PlatformImage?, size: CGFloat) {
         record.rootView = VinylRecordView(artworkImage: artworkImage, size: size)
+        discSize = size
+        invalidateIntrinsicContentSize()
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: discSize + 6, height: discSize + 6)
     }
 
     override func layout() {
@@ -275,12 +278,16 @@ private final class VinylDiscHost: NSView {
 /// gestures wrapped around this representable.
 private final class VinylDiscHost: UIView {
     private let record: UIHostingController<VinylRecordView>
+    /// The record's diameter, so the host can report an intrinsic size on
+    /// iOS 15, which has no representable `sizeThatFits`.
+    private var discSize: CGFloat
     /// Spins the record's own view, not this host: SwiftUI lays the host out
     /// by `frame`, which UIKit leaves undefined under a non-identity transform.
     private(set) lazy var spin = DiscSpinController(layer: record.view.layer)
 
     init(artworkImage: PlatformImage?, size: CGFloat) {
         record = UIHostingController(rootView: VinylRecordView(artworkImage: artworkImage, size: size))
+        discSize = size
         super.init(frame: .zero)
         record.view.backgroundColor = .clear
         addSubview(record.view)

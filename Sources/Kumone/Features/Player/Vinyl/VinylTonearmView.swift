@@ -395,7 +395,13 @@ private final class TonearmHost<Content: View>: NSView {
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
+    /// iOS 15 has no representable `sizeThatFits`; report the arm's own size.
+    override var intrinsicContentSize: CGSize {
+        CGSize(width: width, height: height)
+    }
+
     func update(arm: Content, width: CGFloat, height: CGFloat, pivotY: CGFloat) {
+        invalidateIntrinsicContentSize()
         self.arm.rootView = arm
         self.width = width
         self.height = height
@@ -437,9 +443,6 @@ private struct EngagingTonearm<Content: View>: PlatformViewRepresentable {
         host.motion.setWobbling(wobbling)
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: TonearmHost<Content>, context: Context) -> CGSize? {
-        CGSize(width: width, height: height)
-    }
 }
 
 /// Same square stage as the macOS host — see above.

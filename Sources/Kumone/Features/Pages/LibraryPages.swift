@@ -164,8 +164,10 @@ struct CloudView: View {
                 #if os(iOS)
                 .compatScrollDismissesKeyboard()
                 .toolbar {
-                    if !isSearchActive && !model.items.isEmpty {
-                        ToolbarItem(placement: .navigationBarTrailing) {
+                    // `ToolbarContentBuilder` only learned `buildIf` in iOS 16,
+                    // so the condition sits inside the item instead.
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if !isSearchActive && !model.items.isEmpty {
                             Button {
                                 withAnimation(AppAnimation.standard) {
                                     showSearch = true

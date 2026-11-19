@@ -213,7 +213,7 @@ final class PlayerService: ObservableObject {
     private var currentCacheKey: EngineAudioCache.Key?
     private var currentRemoteURL: URL?
     private var progressTimer: Timer?
-    private var lastPlaybackCheckpoint = ContinuousClock.now
+    private var lastPlaybackCheckpoint: UInt64 = AppTime.nowNanoseconds
 
     /// Live playback position straight off the deck, for smooth per-frame
     /// karaoke highlighting (the published `progress` is intentionally coarse —
@@ -418,7 +418,7 @@ final class PlayerService: ObservableObject {
                     self.progress = seconds
                     NowPlayingManager.shared.updateElapsed(seconds, rate: 1)
                 }
-                if self.lastPlaybackCheckpoint.duration(to: .now) >= .seconds(20) {
+                if (AppTime.nowNanoseconds &- self.lastPlaybackCheckpoint) >= 20_000_000_000 {
                     self.persistState()
                 }
                 self.updateStemPrerender()
@@ -850,7 +850,7 @@ final class PlayerService: ObservableObject {
                     ToastCenter.shared.show(String(localized: "获取私人漫游数据失败"))
                     return
                 }
-                try? await Task.sleep(for: .seconds(1))
+                try? await Task.sleep(nanoseconds: 1_000_000_000)
             }
         }
         guard !fmUpcoming.isEmpty else { return }
@@ -2843,12 +2843,12 @@ final class PlayerService: ObservableObject {
             // the main actor because that is where `lastPick` lives and because
             // one rank measures 0.9 ms in release (13.8 ms in debug) at a
             // 156-track pool; the throttle above is what keeps it there.
-            let start = ContinuousClock.now
+            let start = AppTime.nowNanoseconds
             _ = selector.pick(
                 outgoing: currentTrack, outgoingAnalysis: currentAnalysis, pool: pool,
                 plannerConfig: plannerConfig,
                 outgoingLyricLineEnds: outgoingLyricTiming(for: currentLocalURL)?.lineEnds ?? [])
-            Self.noteIfSlow("debug-preview", (ContinuousClock.now - start).milliseconds,
+            Self.noteIfSlow("debug-preview", AppTime.milliseconds(since: start),
                             detail: "pool=\(pool.count)")
         }
         let candidates = selector.lastPick.enumerated().map { index, candidate in
@@ -3485,12 +3485,12 @@ final class PlayerService: ObservableObject {
         // per landing candidate rather than nine times, and the pick is the one
         // thing here that is not provisional. The tripwire says so if that
         // stops being true.
-        let pickStart = ContinuousClock.now
+        let pickStart = AppTime.nowNanoseconds
         let winner = selector.pick(
             outgoing: currentTrack, outgoingAnalysis: currentAnalysis, pool: pool,
             plannerConfig: plannerConfig,
             outgoingLyricLineEnds: outgoingLyricTiming(for: currentLocalURL)?.lineEnds ?? [])
-        Self.noteIfSlow("pick", (ContinuousClock.now - pickStart).milliseconds,
+        Self.noteIfSlow("pick", AppTime.milliseconds(since: pickStart),
                         detail: "pool=\(pool.count)")
         // Good enough is good enough: the tier is the dominant term, so a
         // further round can only buy a *higher* tier or a second-order
@@ -3722,11 +3722,11 @@ final class PlayerService: ObservableObject {
         let input = selector.chainInput(head: head, remaining: rest,
                                         plannerConfig: plannerConfig)
         Task { [weak self] in
-            let start = ContinuousClock.now
+            let start = AppTime.nowNanoseconds
             let results = await Task.detached(priority: .utility) {
                 QueueOrderSelector.chain(input, depth: depth)
             }.value
-            let elapsed = (ContinuousClock.now - start).milliseconds
+            let elapsed = AppTime.milliseconds(since: start)
             guard let self else { return }
             // A commit, a queue edit or a track change happened while this was
             // running: its premise is gone, and a provisional chain is never

@@ -29,7 +29,6 @@ struct SongCommentsView: View {
     @ObservedObject private var toasts = ToastCenter.shared
     @Environment(\.dismiss) private var dismiss
     #if os(iOS)
-    @State private var detent: PresentationDetent = .medium
     #endif
 
     init(track: Track) {
@@ -47,8 +46,7 @@ struct SongCommentsView: View {
         #if os(macOS)
         .frame(minWidth: 420, idealWidth: 520, maxWidth: 760, minHeight: 420, idealHeight: 640, maxHeight: 960)
         #else
-        .presentationDetents([.medium, .large], selection: $detent)
-        .presentationDragIndicator(.visible)
+        .compatSheetMediumLarge()
         #endif
         // A sheet covers the window's own toast overlay (#182); errors from a
         // like must still be seen here.

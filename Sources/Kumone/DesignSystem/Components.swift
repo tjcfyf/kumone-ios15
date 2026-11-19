@@ -259,6 +259,8 @@ final class MarqueeTextView: PlatformView {
     private let second = CATextLayer()
     private let fade = CAGradientLayer()
 
+    /// Mirrors `MarqueeText.hugsText`: take only the text's own width.
+    var hugsText = false
     private var text: String
     private var fontSize: CGFloat
     private var weight: PlatformFont.Weight
@@ -306,6 +308,9 @@ final class MarqueeTextView: PlatformView {
         self.weight = weight
         applyText()
         relayout()
+        #if os(iOS)
+        invalidateIntrinsicContentSize()
+        #endif
     }
 
     private var font: PlatformFont { .systemFont(ofSize: fontSize, weight: weight) }
@@ -317,6 +322,16 @@ final class MarqueeTextView: PlatformView {
         return UIColor.label.cgColor
         #endif
     }
+
+    #if os(iOS)
+    /// iOS 15 has no `UIViewRepresentable.sizeThatFits(_:uiView:context:)`
+    /// (that arrived with iOS 16), so the view reports an intrinsic size.
+    override var intrinsicContentSize: CGSize {
+        let needed = Self.textWidth(text, fontSize: fontSize, weight: weight)
+        return CGSize(width: hugsText ? needed : UIView.noIntrinsicMetric,
+                      height: fontSize * 1.3)
+    }
+    #endif
 
     static func textWidth(_ text: String, fontSize: CGFloat, weight: PlatformFont.Weight) -> CGFloat {
         let font = PlatformFont.systemFont(ofSize: fontSize, weight: weight)
@@ -440,11 +455,6 @@ final class MarqueeTextView: PlatformView {
         func sizeThatFits(_ proposal: ProposedViewSize, nsView: MarqueeTextView, context: Context) -> CGSize? {
             hugging(proposal)
         }
-        #else
-        func sizeThatFits(_ proposal: ProposedViewSize, uiView: MarqueeTextView, context: Context) -> CGSize? {
-            hugging(proposal)
-        }
-        #endif
 
         private func hugging(_ proposal: ProposedViewSize) -> CGSize? {
             guard hugsText else { return nil }
@@ -452,6 +462,7 @@ final class MarqueeTextView: PlatformView {
             let width = proposal.width.map { min($0, needed) } ?? needed
             return CGSize(width: width, height: proposal.height ?? fontSize * 1.3)
         }
+        #endif
 
         #if os(macOS)
         func makeNSView(context: Context) -> MarqueeTextView {
@@ -462,9 +473,12 @@ final class MarqueeTextView: PlatformView {
         }
         #else
         func makeUIView(context: Context) -> MarqueeTextView {
-            MarqueeTextView(text: text, fontSize: fontSize, weight: weight)
+            let view = MarqueeTextView(text: text, fontSize: fontSize, weight: weight)
+            view.hugsText = hugsText
+            return view
         }
         func updateUIView(_ view: MarqueeTextView, context: Context) {
+            view.hugsText = hugsText
             view.update(text: text, fontSize: fontSize, weight: weight)
         }
         #endif

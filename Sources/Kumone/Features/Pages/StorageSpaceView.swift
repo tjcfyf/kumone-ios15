@@ -132,7 +132,7 @@ struct StorageSpaceView: View {
                 Section { Text(message).font(.footnote).foregroundStyle(.secondary).accessibilityAddTraits(.updatesFrequently) }
             }
         }
-        .formStyle(.grouped)
+        .compatFormStyleGrouped()
         .navigationTitle("存储空间")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

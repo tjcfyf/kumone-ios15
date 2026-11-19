@@ -245,7 +245,7 @@ struct LoginSheet: View {
 
                 var consecutiveErrors = 0
                 while !Task.isCancelled {
-                    try await Task.sleep(for: .seconds(1.2))
+                    try await Task.sleep(nanoseconds: 1_200_000_000)
                     let check: MusicAPI.QRCheckResponse
                     do {
                         check = try await MusicAPI.qrCheck(unikey: key)
@@ -399,7 +399,7 @@ struct LoginSheet: View {
                 cooldownTask?.cancel()
                 cooldownTask = Task {
                     while smsCooldown > 0, !Task.isCancelled {
-                        try? await Task.sleep(for: .seconds(1))
+                        try? await Task.sleep(nanoseconds: 1_000_000_000)
                         smsCooldown -= 1
                     }
                 }

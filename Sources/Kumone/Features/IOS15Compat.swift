@@ -218,3 +218,60 @@ extension View {
         }
     }
 }
+
+extension View {
+    /// `formStyle(.grouped)` is iOS 16; on iOS 15 `Form` already renders grouped.
+    @ViewBuilder
+    func compatFormStyleGrouped() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            formStyle(.grouped)
+        } else {
+            self
+        }
+    }
+
+    /// `menuOrder(.fixed)` is iOS 16; older systems keep the default order.
+    @ViewBuilder
+    func compatMenuOrderFixed() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            menuOrder(.fixed)
+        } else {
+            self
+        }
+    }
+
+    /// `presentationDetents` is iOS 16; older systems present the sheet at
+    /// full height.
+    @ViewBuilder
+    func compatSheetLarge() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
+    }
+
+    @ViewBuilder
+    func compatSheetMediumLarge() -> some View {
+        if #available(iOS 16.0, macOS 13.0, *) {
+            presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
+    }
+}
+
+#if os(iOS)
+/// iOS 15 fallback for `ShareLink`: the system share sheet, wrapped for SwiftUI.
+struct CompatActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: items, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+#endif

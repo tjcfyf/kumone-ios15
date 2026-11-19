@@ -2449,7 +2449,7 @@ private struct IOSMinimalLyricsColumn: View {
         // ponytail: iOS 16 has no scroll phase API; replace with onScrollPhaseChange
         // when the deployment target reaches iOS 18.
         scrollSettleTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(120))
+            try? await Task.sleep(nanoseconds: 120_000_000)
             guard !Task.isCancelled else { return }
             let selection = nearestLine(to: guideY, in: lineCenters) ?? nearestIndex
             selectedIndex = selection
@@ -2466,7 +2466,7 @@ private struct IOSMinimalLyricsColumn: View {
     private func scheduleSelectionTimeout(proxy: ScrollViewProxy) {
         selectionTimeoutTask?.cancel()
         selectionTimeoutTask = Task { @MainActor in
-            try? await Task.sleep(for: .seconds(5))
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
             guard !Task.isCancelled, selectedIndex != nil else { return }
             returnToActiveLine(proxy: proxy)
         }
@@ -2793,9 +2793,11 @@ private struct MinimalTransportControls: View {
             IOSPlaybackQueueView(backdrop: backdrop)
                 .presentationDetents([.fraction(0.5)])
                 .presentationBackgroundInteraction(.enabled)
-        } else {
+        } else if #available(iOS 16.0, *) {
             IOSPlaybackQueueView(backdrop: backdrop)
                 .presentationDetents([.fraction(0.5)])
+        } else {
+            IOSPlaybackQueueView(backdrop: backdrop)
         }
     }
 

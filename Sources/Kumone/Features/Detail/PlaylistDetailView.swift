@@ -55,7 +55,10 @@ struct PlaylistDetailView: View {
     /// Loading notes that mention search: always on the liked list, as
     /// before, and on any other playlist while it is being searched.
     private var showsSearchLoadingNotes: Bool {
-        supportsPlaylistSearch && (isOwnLikedSongs || isSearchActive || TrackSearch.query(model.filter) != nil)
+        guard supportsPlaylistSearch else { return false }
+        if isOwnLikedSongs { return true }
+        if isSearchActive { return true }
+        return TrackSearch.query(model.filter) != nil
     }
 
     #if os(iOS)
@@ -83,16 +86,18 @@ struct PlaylistDetailView: View {
                     await loadPlaylist()
                 }
                 .toolbar {
-                    if model.errorMessage != nil, downloads.network.connected, model.detail != nil {
-                        ToolbarItem(placement: .primaryAction) {
+                    // iOS 15's `ToolbarContentBuilder` has no `buildIf`, so the
+                    // conditions live inside a single item's view builder.
+                    ToolbarItem(placement: .primaryAction) {
+                        if model.errorMessage != nil, downloads.network.connected, model.detail != nil {
                             Button { Task { await loadPlaylist() } } label: { Image(systemName: "arrow.clockwise") }
                                 .accessibilityLabel("重试")
                                 .help("重试")
                         }
                     }
                     #if os(iOS)
-                    if isOwnLikedSongs && supportsPlaylistSearch && !isSearchActive {
-                        ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        if isOwnLikedSongs && supportsPlaylistSearch && !isSearchActive {
                             Menu {
                                 Button {
                                     revealSearch(proxy)
@@ -112,9 +117,7 @@ struct PlaylistDetailView: View {
                                 Label("更多", systemImage: "ellipsis")
                             }
                             .accessibilityIdentifier("likedSongsMenu")
-                        }
-                    } else if supportsPlaylistSearch && !isSearchActive {
-                        ToolbarItem(placement: .navigationBarTrailing) {
+                        } else if supportsPlaylistSearch && !isSearchActive {
                             Button {
                                 revealSearch(proxy)
                             } label: {
