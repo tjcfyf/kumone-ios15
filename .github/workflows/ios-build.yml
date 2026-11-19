@@ -8,19 +8,25 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    defaults:
+      run:
+        working-directory: kumone
     steps:
       - uses: actions/checkout@v4
+        with:
+          # SPM resolves path-based dependencies by directory name; the
+          # package manifest refers to "kumone", so check out into that name.
+          path: kumone
 
       - name: Toolchain info
         run: |
-          ls -d /Applications/Xcode*.app || true
-          sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          sudo xcode-select -s /Applications/Xcode_26.3.app
           xcodebuild -version
           swift --version
-          echo "SDKs:"
-          xcodebuild -showsdks | grep -i ios || true
+          xcodebuild -showsdks | grep -i "iphoneos" || true
 
       - name: Build (unsigned)
+        id: build
         run: |
           set -o pipefail
           xcodebuild build \
@@ -32,21 +38,19 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGN_ENTITLEMENTS="" \
-            2>&1 | tee build.log | grep -E "error:|warning: .*deployment target|BUILD (SUCCEEDED|FAILED)" | head -400 || true
+            2>&1 | tee build.log
+          echo "exit=$?"
 
-      - name: Error summary
+      - name: Summary
         if: always()
         run: |
-          echo "=== error count ==="
-          grep -c "error:" build.log || echo 0
-          echo "=== unique errors ==="
-          grep "error:" build.log | sed 's|/Users/runner/work/[^/]*/[^/]*/||' | sort -u | head -200 || true
-          echo "=== tail ==="
-          tail -40 build.log || true
+          echo "=== errors: $(grep -c 'error:' build.log || echo 0) ==="
+          grep "error:" build.log | sed "s|$GITHUB_WORKSPACE/||g" | sort -u | head -300 || true
+          echo "=== result ==="
+          grep -E "BUILD (SUCCEEDED|FAILED)" build.log | tail -3 || echo "no result line"
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: build-log
-          path: build.log
+          path: kumone/build.log
