@@ -3885,7 +3885,7 @@ final class PlayerService: ObservableObject {
     }
 
     private func persistState() {
-        lastPlaybackCheckpoint = .now
+        lastPlaybackCheckpoint = AppTime.nowNanoseconds
         let state = PlaybackState(session: playbackSession, recentContexts: recentContexts)
         PlaybackStateStorage.save(state, to: Self.stateFileURL)
     }

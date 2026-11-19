@@ -67,7 +67,9 @@ struct SongCommentsView: View {
     /// On a medium-height iPhone sheet the window's toast is still in view above it.
     private var showsToastHere: Bool {
         #if os(iOS)
-        return detent == .large
+        // The comments sheet is always large now, so the window's toast sits
+        // behind it; the sheet shows its own instead.
+        return false
         #else
         return true
         #endif

@@ -41,6 +41,33 @@ jobs:
             2>&1 | tee build.log
           echo "exit=$?"
 
+      - name: Archive (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -workspace ios/KumoneIOS.xcworkspace \
+            -scheme KumoneIOS \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            -archivePath build/Kumone.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            2>&1 | tee archive.log
+
+      - name: Package unsigned IPA
+        run: |
+          APP=$(find build/Kumone.xcarchive/Products/Applications -maxdepth 1 -name "*.app" | head -1)
+          echo "app: $APP"
+          test -n "$APP"
+          mkdir -p out/Payload
+          cp -R "$APP" out/Payload/
+          cd out
+          zip -qry ../Kumone-iOS15-unsigned.ipa Payload
+          cd ..
+          ls -lh Kumone-iOS15-unsigned.ipa
+
       - name: Summary
         if: always()
         run: |
@@ -53,4 +80,12 @@ jobs:
         if: always()
         with:
           name: build-log
-          path: kumone/build.log
+          path: |
+            kumone/build.log
+            kumone/archive.log
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: unsigned-ipa
+          path: kumone/Kumone-iOS15-unsigned.ipa
